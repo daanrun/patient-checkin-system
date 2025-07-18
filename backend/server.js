@@ -11,7 +11,9 @@ app.use(express.urlencoded({ extended: true }));
 
 // CORS middleware
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:5173'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://checkinpatient.netlify.app']
+    : ['http://localhost:3000', 'http://localhost:5173'],
   credentials: true
 }));
 
@@ -46,21 +48,17 @@ app.get('/api/health', (req, res) => {
 
 // Import route handlers
 const patientsRouter = require('./routes/patients');
+const insuranceRouter = require('./routes/insurance');
+const clinicalFormsRouter = require('./routes/clinical-forms');
+const completionRouter = require('./routes/completion');
+const adminRouter = require('./routes/admin');
 
-// Basic routing structure
+// API routes
 app.use('/api/patients', patientsRouter);
-
-app.use('/api/insurance', (req, res) => {
-  res.status(501).json({ error: 'Insurance endpoint not yet implemented' });
-});
-
-app.use('/api/clinical-forms', (req, res) => {
-  res.status(501).json({ error: 'Clinical forms endpoint not yet implemented' });
-});
-
-app.use('/api/admin', (req, res) => {
-  res.status(501).json({ error: 'Admin endpoint not yet implemented' });
-});
+app.use('/api/insurance', insuranceRouter);
+app.use('/api/clinical-forms', clinicalFormsRouter);
+app.use('/api/completion', completionRouter);
+app.use('/api/admin', adminRouter);
 
 // 404 handler for unknown routes
 app.use('*', (req, res) => {

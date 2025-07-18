@@ -12,6 +12,12 @@
   # Node.js version
   NODE_VERSION = "18"
 
+# API redirects to Netlify Functions
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
 # Redirect rules for React Router
 [[redirects]]
   from = "/*"

@@ -1,5 +1,7 @@
 // API utility for handling backend calls
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || (
+  import.meta.env.PROD ? '/api' : 'http://localhost:5001/api'
+);
 
 export const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE_URL}${endpoint}`;

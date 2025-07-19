@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCheckIn } from '../contexts/CheckInContext'
-import { apiCall } from '../utils/api'
 
 const Confirmation = () => {
   const navigate = useNavigate()
@@ -11,6 +10,7 @@ const Confirmation = () => {
     estimatedWaitTime: 20,
     error: null
   })
+  const hasCompletedRef = useRef(false)
 
   // Complete the check-in process
   const completeCheckIn = async () => {
@@ -72,12 +72,13 @@ const Confirmation = () => {
   useEffect(() => {
     if (!canNavigateToStep(4)) {
       navigate('/demographics')
-    } else {
-      // Mark final step as completed and trigger completion
+    } else if (!hasCompletedRef.current) {
+      // Mark final step as completed and trigger completion only once
+      hasCompletedRef.current = true
       markStepCompleted(4)
       completeCheckIn()
     }
-  }, [canNavigateToStep, navigate, markStepCompleted])
+  }, [canNavigateToStep, navigate])
 
   const handleStartOver = () => {
     // Clear all data and start over

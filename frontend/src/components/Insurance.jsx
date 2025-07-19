@@ -128,17 +128,24 @@ const Insurance = () => {
         fileNames: selectedFiles.map(f => f.name)
       }
 
+      console.log('Submitting insurance data:', insuranceData)
+
       // Submit to API
       const response = await apiCall('/insurance', {
         method: 'POST',
         body: JSON.stringify(insuranceData)
       })
 
-      const result = await response.json()
+      console.log('API response status:', response.status)
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to save insurance information')
+        const errorText = await response.text()
+        console.error('API error response:', errorText)
+        throw new Error(`API Error (${response.status}): ${errorText}`)
       }
+
+      const result = await response.json()
+      console.log('API success response:', result)
 
       // Store patient ID for next steps
       localStorage.setItem('patientId', patientId.toString())
@@ -147,7 +154,7 @@ const Insurance = () => {
       updateFormData('insurance', {
         ...formData,
         submitted: true,
-        submissionId: result.data.id,
+        submissionId: result.data?.id,
         patientId: patientId
       })
 
@@ -159,7 +166,7 @@ const Insurance = () => {
       console.error('Error submitting insurance information:', error)
       setErrors(prev => ({
         ...prev,
-        submit: error.message || 'Failed to save insurance information. Please try again.'
+        submit: `Submission failed: ${error.message}. Please check your connection and try again.`
       }))
     } finally {
       setIsSubmitting(false)

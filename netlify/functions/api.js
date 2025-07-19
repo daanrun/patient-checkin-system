@@ -49,7 +49,7 @@ app.use((err, req, res, next) => {
 });
 
 // Health check endpoint
-app.get('/health', (req, res) => {
+app.get('/api/health', (req, res) => {
   res.json({ 
     message: 'Patient Check-in API is running', 
     status: 'healthy',
@@ -59,7 +59,7 @@ app.get('/health', (req, res) => {
 });
 
 // Insurance endpoint
-app.post('/insurance', (req, res) => {
+app.post('/api/insurance', (req, res) => {
   try {
     const { provider, policyNumber, groupNumber, subscriberName, patientId } = req.body;
     
@@ -102,7 +102,7 @@ app.post('/insurance', (req, res) => {
 });
 
 // Clinical forms endpoint
-app.post('/clinical-forms', (req, res) => {
+app.post('/api/clinical-forms', (req, res) => {
   try {
     const { medicalHistory, currentMedications, allergies, symptoms, patientId } = req.body;
 
@@ -138,7 +138,7 @@ app.post('/clinical-forms', (req, res) => {
 });
 
 // Completion endpoint
-app.post('/completion', (req, res) => {
+app.post('/api/completion', (req, res) => {
   try {
     const { patientId, estimatedWaitTime } = req.body;
 
@@ -172,7 +172,7 @@ app.post('/completion', (req, res) => {
 });
 
 // Admin endpoints
-app.get('/admin/submissions', (req, res) => {
+app.get('/api/admin/submissions', (req, res) => {
   try {
     // Group submissions by patient
     const patientSubmissions = {};
@@ -220,7 +220,7 @@ app.get('/admin/submissions', (req, res) => {
   }
 });
 
-app.get('/admin/submissions/:id', (req, res) => {
+app.get('/api/admin/submissions/:id', (req, res) => {
   try {
     const patientId = parseInt(req.params.id);
     

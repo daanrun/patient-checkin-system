@@ -13,18 +13,38 @@ const AdminDetailView = () => {
     const fetchSubmissionDetails = async () => {
       try {
         setLoading(true);
-        const response = await apiCall(`/admin/submissions/${id}`);
         
+        console.log('🔄 Fetching submission details for ID:', id);
+
+        // Use direct fetch (same approach that worked for other components)
+        console.log('🧪 Testing direct fetch to /api/admin/submissions/' + id);
+        
+        const response = await fetch(`/api/admin/submissions/${id}`, {
+          method: 'GET',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('📥 Direct fetch response status:', response.status);
+        console.log('📥 Direct fetch response headers:', Object.fromEntries(response.headers));
+
         if (!response.ok) {
-          throw new Error('Failed to fetch submission details');
+          const errorText = await response.text();
+          console.error('❌ Direct fetch error response:', errorText);
+          throw new Error(`Direct Fetch Error (${response.status}): ${errorText}`);
         }
 
         const result = await response.json();
+        console.log('✅ Submission details success response:', result);
+
         setSubmission(result.data);
         setError(null);
       } catch (err) {
-        setError(err.message);
-        console.error('Error fetching submission details:', err);
+        console.error('💥 Error fetching submission details:', err);
+        console.error('💥 Error stack:', err.stack);
+        setError(`Failed to fetch submission details: ${err.message}. Please check your connection and try again.`);
       } finally {
         setLoading(false);
       }

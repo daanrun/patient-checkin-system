@@ -22,18 +22,37 @@ const AdminDashboard = () => {
       if (dateTo) params.append('dateTo', dateTo);
       if (statusFilter) params.append('status', statusFilter);
 
-      const response = await apiCall(`/admin/submissions?${params}`);
+      console.log('🔄 Fetching admin submissions with params:', params.toString());
+
+      // Use direct fetch (same approach that worked for other components)
+      console.log('🧪 Testing direct fetch to /api/admin/submissions...');
       
+      const response = await fetch(`/api/admin/submissions?${params}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('📥 Direct fetch response status:', response.status);
+      console.log('📥 Direct fetch response headers:', Object.fromEntries(response.headers));
+
       if (!response.ok) {
-        throw new Error('Failed to fetch submissions');
+        const errorText = await response.text();
+        console.error('❌ Direct fetch error response:', errorText);
+        throw new Error(`Direct Fetch Error (${response.status}): ${errorText}`);
       }
 
       const result = await response.json();
-      setSubmissions(result.data);
+      console.log('✅ Admin submissions success response:', result);
+
+      setSubmissions(result.data || []);
       setError(null);
     } catch (err) {
-      setError(err.message);
-      console.error('Error fetching submissions:', err);
+      console.error('💥 Error fetching submissions:', err);
+      console.error('💥 Error stack:', err.stack);
+      setError(`Failed to fetch submissions: ${err.message}. Please check your connection and try again.`);
     } finally {
       setLoading(false);
     }

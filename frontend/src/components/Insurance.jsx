@@ -114,28 +114,24 @@ const Insurance = () => {
     setIsSubmitting(true)
     
     try {
-      // Create FormData for file upload
-      const formDataToSubmit = new FormData()
+      // Get patient ID
+      const patientId = contextFormData.demographics?.patientId || Math.floor(Math.random() * 1000) + 1
       
-      // Add form fields
-      formDataToSubmit.append('provider', formData.provider)
-      formDataToSubmit.append('policyNumber', formData.policyNumber)
-      formDataToSubmit.append('groupNumber', formData.groupNumber || '')
-      formDataToSubmit.append('subscriberName', formData.subscriberName)
-      
-      // Add patient ID (assuming it's stored in demographics data)
-      const patientId = contextFormData.demographics?.patientId || 1 // Fallback for demo
-      formDataToSubmit.append('patientId', patientId)
-      
-      // Add files if selected
-      selectedFiles.forEach(file => {
-        formDataToSubmit.append('cardImages', file)
-      })
+      // Prepare JSON data (file upload simplified for demo)
+      const insuranceData = {
+        provider: formData.provider,
+        policyNumber: formData.policyNumber,
+        groupNumber: formData.groupNumber || '',
+        subscriberName: formData.subscriberName,
+        patientId: patientId,
+        hasFiles: selectedFiles.length > 0,
+        fileNames: selectedFiles.map(f => f.name)
+      }
 
       // Submit to API
       const response = await apiCall('/insurance', {
         method: 'POST',
-        body: formDataToSubmit
+        body: JSON.stringify(insuranceData)
       })
 
       const result = await response.json()
@@ -144,11 +140,15 @@ const Insurance = () => {
         throw new Error(result.error || 'Failed to save insurance information')
       }
 
+      // Store patient ID for next steps
+      localStorage.setItem('patientId', patientId.toString())
+
       // Update context with successful submission
       updateFormData('insurance', {
         ...formData,
         submitted: true,
-        submissionId: result.data.id
+        submissionId: result.data.id,
+        patientId: patientId
       })
 
       // Mark step as completed and navigate to next step

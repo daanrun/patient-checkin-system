@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Insurance API Debug Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 600px; margin: 0 auto; }
+        .result { margin: 20px 0; padding: 10px; border: 1px solid #ccc; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 10px 0; }
+        pre { background: #f5f5f5; padding: 10px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Insurance API Debug Test</h1>
+        <p>This page tests the insurance API directly to debug the issue.</p>
+        
+        <button onclick="testHealthCheck()">Test Health Check</button>
+        <button onclick="testInsuranceAPI()">Test Insurance API</button>
+        <button onclick="testWithDifferentHeaders()">Test with Different Headers</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function addResult(title, content, isError = false) {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${isError ? 'error' : 'success'}`;
+            div.innerHTML = `<h3>${title}</h3><pre>${content}</pre>`;
+            results.appendChild(div);
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testHealthCheck() {
+            try {
+                console.log('Testing health check...');
+                
+                const response = await fetch('/api/health', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                addResult('Health Check Result', 
+                    `Status: ${response.status}\n` +
+                    `Response: ${JSON.stringify(data, null, 2)}\n` +
+                    `Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}`
+                );
+                
+            } catch (error) {
+                console.error('Health check failed:', error);
+                addResult('Health Check Error', 
+                    `Error: ${error.message}\n` +
+                    `Stack: ${error.stack}`, 
+                    true
+                );
+            }
+        }
+
+        async function testInsuranceAPI() {
+            try {
+                console.log('Testing insurance API...');
+                
+                const testData = {
+                    provider: 'Test Insurance Company',
+                    policyNumber: 'TEST123456',
+                    groupNumber: 'GRP001',
+                    subscriberName: 'John Doe Test',
+                    patientId: 12345,
+                    hasFiles: false,
+                    fileNames: []
+                };
+                
+                console.log('Sending data:', testData);
+                
+                const response = await fetch('/api/insurance', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'Origin': window.location.origin
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                addResult('Insurance API Result', 
+                    `Status: ${response.status}\n` +
+                    `Request Data: ${JSON.stringify(testData, null, 2)}\n` +
+                    `Response: ${JSON.stringify(data, null, 2)}\n` +
+                    `Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}`
+                );
+                
+            } catch (error) {
+                console.error('Insurance API failed:', error);
+                addResult('Insurance API Error', 
+                    `Error: ${error.message}\n` +
+                    `Stack: ${error.stack}`, 
+                    true
+                );
+            }
+        }
+
+        async function testWithDifferentHeaders() {
+            try {
+                console.log('Testing with different headers...');
+                
+                const testData = {
+                    provider: 'Different Headers Test',
+                    policyNumber: 'DIFF123',
+                    subscriberName: 'Test User',
+                    patientId: 99999
+                };
+                
+                // Test with minimal headers
+                const response = await fetch('/api/insurance', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const data = await response.json();
+                
+                addResult('Different Headers Test', 
+                    `Status: ${response.status}\n` +
+                    `Response: ${JSON.stringify(data, null, 2)}`
+                );
+                
+            } catch (error) {
+                console.error('Different headers test failed:', error);
+                addResult('Different Headers Error', 
+                    `Error: ${error.message}`, 
+                    true
+                );
+            }
+        }
+
+        // Test on page load
+        window.addEventListener('load', () => {
+            console.log('Page loaded, running initial tests...');
+            testHealthCheck();
+        });
+    </script>
+</body>
+</html>

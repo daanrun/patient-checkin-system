@@ -128,24 +128,31 @@ const Insurance = () => {
         fileNames: selectedFiles.map(f => f.name)
       }
 
-      console.log('Submitting insurance data:', insuranceData)
+      console.log('🔄 Submitting insurance data:', insuranceData)
 
-      // Submit to API
-      const response = await apiCall('/insurance', {
+      // Try direct fetch first (bypass API utility for debugging)
+      console.log('🧪 Testing direct fetch to /api/insurance...')
+      
+      const directResponse = await fetch('/api/insurance', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(insuranceData)
       })
 
-      console.log('API response status:', response.status)
+      console.log('📥 Direct fetch response status:', directResponse.status)
+      console.log('📥 Direct fetch response headers:', Object.fromEntries(directResponse.headers))
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('API error response:', errorText)
-        throw new Error(`API Error (${response.status}): ${errorText}`)
+      if (!directResponse.ok) {
+        const errorText = await directResponse.text()
+        console.error('❌ Direct fetch error response:', errorText)
+        throw new Error(`Direct Fetch Error (${directResponse.status}): ${errorText}`)
       }
 
-      const result = await response.json()
-      console.log('API success response:', result)
+      const result = await directResponse.json()
+      console.log('✅ Direct fetch success response:', result)
 
       // Store patient ID for next steps
       localStorage.setItem('patientId', patientId.toString())
@@ -163,7 +170,8 @@ const Insurance = () => {
       navigate('/clinical-forms')
 
     } catch (error) {
-      console.error('Error submitting insurance information:', error)
+      console.error('💥 Error submitting insurance information:', error)
+      console.error('💥 Error stack:', error.stack)
       setErrors(prev => ({
         ...prev,
         submit: `Submission failed: ${error.message}. Please check your connection and try again.`

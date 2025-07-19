@@ -89,26 +89,40 @@ const ClinicalForms = () => {
         patientId: patientId
       };
 
-      const response = await apiCall('/clinical-forms', {
+      console.log('🔄 Submitting clinical forms data:', clinicalFormsData)
+
+      // Use direct fetch (same approach that worked for insurance)
+      console.log('🧪 Testing direct fetch to /api/clinical-forms...')
+      
+      const response = await fetch('/api/clinical-forms', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify(clinicalFormsData)
-      });
+      })
+
+      console.log('📥 Direct fetch response status:', response.status)
+      console.log('📥 Direct fetch response headers:', Object.fromEntries(response.headers))
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit clinical forms');
+        const errorText = await response.text()
+        console.error('❌ Direct fetch error response:', errorText)
+        throw new Error(`Direct Fetch Error (${response.status}): ${errorText}`)
       }
 
-      const result = await response.json();
-      console.log('Clinical forms submitted successfully:', result);
+      const result = await response.json()
+      console.log('✅ Clinical forms success response:', result)
 
       // Mark step as completed and navigate to confirmation
       markStepCompleted(3)
       navigate('/confirmation')
 
     } catch (error) {
-      console.error('Error submitting clinical forms:', error);
-      setErrors({ submit: error.message || 'Failed to submit clinical forms. Please try again.' });
+      console.error('💥 Error submitting clinical forms:', error);
+      console.error('💥 Error stack:', error.stack)
+      setErrors({ submit: `Submission failed: ${error.message}. Please check your connection and try again.` });
     }
   }
 

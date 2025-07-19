@@ -20,30 +20,46 @@ const Confirmation = () => {
         throw new Error('Patient ID not found')
       }
 
-      const response = await apiCall('/completion', {
+      const completionData = {
+        patientId: parseInt(patientId),
+        estimatedWaitTime: 20
+      }
+
+      console.log('🔄 Completing check-in:', completionData)
+
+      // Use direct fetch (same approach that worked for insurance)
+      console.log('🧪 Testing direct fetch to /api/completion...')
+      
+      const response = await fetch('/api/completion', {
         method: 'POST',
-        body: JSON.stringify({
-          patientId: parseInt(patientId),
-          estimatedWaitTime: 20
-        })
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(completionData)
       })
 
+      console.log('📥 Direct fetch response status:', response.status)
+      console.log('📥 Direct fetch response headers:', Object.fromEntries(response.headers))
+
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to complete check-in')
+        const errorText = await response.text()
+        console.error('❌ Direct fetch error response:', errorText)
+        throw new Error(`Direct Fetch Error (${response.status}): ${errorText}`)
       }
 
       const result = await response.json()
-      console.log('Check-in completed successfully:', result)
+      console.log('✅ Check-in completion success response:', result)
 
       setCompletionStatus({
         isCompleted: true,
-        estimatedWaitTime: result.data.estimatedWaitTime,
+        estimatedWaitTime: result.data?.estimatedWaitTime || 20,
         error: null
       })
 
     } catch (error) {
-      console.error('Error completing check-in:', error)
+      console.error('💥 Error completing check-in:', error)
+      console.error('💥 Error stack:', error.stack)
       setCompletionStatus({
         isCompleted: false,
         estimatedWaitTime: 20,

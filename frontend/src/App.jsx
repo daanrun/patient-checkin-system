@@ -12,6 +12,7 @@ import AdminDetailView from './components/AdminDetailView'
 import ErrorBoundary from './components/ErrorBoundary'
 
 // Backend connected to Render: https://patient-checkin-system.onrender.com
+// Force deployment to use Render backend instead of Netlify Functions
 
 function App() {
   return (

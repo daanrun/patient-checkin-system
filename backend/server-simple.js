@@ -5,6 +5,17 @@ const { initializeDatabase } = require('./database/db');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
+// In-memory storage for demo purposes
+let patients = [];
+let insurance = [];
+let clinicalForms = [];
+let completions = [];
+
+// Helper function to generate UUID
+function generateId() {
+  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+}
+
 // Basic middleware for JSON parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -145,10 +156,23 @@ app.post('/api/patients', async (req, res) => {
       });
     }
 
-    // For now, just return success - in production you'd save to database
+    const patient = {
+      id: generateId(),
+      first_name,
+      last_name,
+      date_of_birth,
+      address,
+      phone,
+      email,
+      created_at: new Date().toISOString()
+    };
+
+    patients.push(patient);
+    console.log('Patient created:', patient.id);
+
     res.status(201).json({
       message: 'Patient demographics saved successfully',
-      patient: { id: Date.now(), first_name, last_name, email }
+      patient: patient
     });
   } catch (error) {
     console.error('Patient creation error:', error);
@@ -162,7 +186,7 @@ app.post('/api/patients', async (req, res) => {
 // Simple insurance endpoint
 app.post('/api/insurance', async (req, res) => {
   try {
-    const { provider, policyNumber, groupNumber, subscriberName } = req.body;
+    const { provider, policyNumber, groupNumber, subscriberName, patientId } = req.body;
     
     if (!provider || !policyNumber || !subscriberName) {
       return res.status(400).json({
@@ -171,9 +195,22 @@ app.post('/api/insurance', async (req, res) => {
       });
     }
 
+    const insuranceRecord = {
+      id: generateId(),
+      patientId: patientId || generateId(),
+      provider,
+      policyNumber,
+      groupNumber,
+      subscriberName,
+      created_at: new Date().toISOString()
+    };
+
+    insurance.push(insuranceRecord);
+    console.log('Insurance created:', insuranceRecord.id);
+
     res.status(201).json({
       message: 'Insurance information saved successfully',
-      insurance: { id: Date.now(), provider, policyNumber, subscriberName }
+      insurance: insuranceRecord
     });
   } catch (error) {
     console.error('Insurance creation error:', error);
@@ -187,11 +224,24 @@ app.post('/api/insurance', async (req, res) => {
 // Simple clinical forms endpoint
 app.post('/api/clinical-forms', async (req, res) => {
   try {
-    const { medicalHistory, currentMedications, allergies, symptoms } = req.body;
+    const { medicalHistory, currentMedications, allergies, symptoms, patientId } = req.body;
+
+    const clinicalRecord = {
+      id: generateId(),
+      patientId: patientId || generateId(),
+      medicalHistory,
+      currentMedications,
+      allergies,
+      symptoms,
+      created_at: new Date().toISOString()
+    };
+
+    clinicalForms.push(clinicalRecord);
+    console.log('Clinical forms created:', clinicalRecord.id);
 
     res.status(201).json({
       message: 'Clinical forms saved successfully',
-      clinicalForms: { id: Date.now(), medicalHistory, currentMedications, allergies, symptoms }
+      clinicalForms: clinicalRecord
     });
   } catch (error) {
     console.error('Clinical forms creation error:', error);
@@ -207,9 +257,19 @@ app.post('/api/completion', async (req, res) => {
   try {
     const { patientId, estimatedWaitTime } = req.body;
 
+    const completionRecord = {
+      id: generateId(),
+      patientId: patientId || generateId(),
+      estimatedWaitTime: estimatedWaitTime || 20,
+      completed_at: new Date().toISOString()
+    };
+
+    completions.push(completionRecord);
+    console.log('Completion created:', completionRecord.id);
+
     res.status(201).json({
       message: 'Check-in completed successfully',
-      completion: { id: Date.now(), patientId, estimatedWaitTime: estimatedWaitTime || 20 }
+      completion: completionRecord
     });
   } catch (error) {
     console.error('Completion error:', error);
@@ -220,26 +280,187 @@ app.post('/api/completion', async (req, res) => {
   }
 });
 
-// Simple admin endpoints
+// Enhanced admin endpoints
 app.get('/api/admin/submissions', (req, res) => {
-  res.json({
-    success: true,
-    data: [],
-    total: 0,
-    message: 'No submissions found - using simplified backend'
-  });
+  try {
+    console.log('Admin submissions requested');
+    console.log('Current data:', { 
+      patients: patients.length, 
+      insurance: insurance.length, 
+      clinicalForms: clinicalForms.length, 
+      completions: completions.length 
+    });
+
+    // Group data by patient
+    const submissions = [];
+    
+    // Create submissions from insurance records (most common entry point)
+    insurance.forEach(ins => {
+      const patient = patients.find(p => p.id === ins.patientId);
+      const clinical = clinicalForms.find(c => c.patientId === ins.patientId);
+      const completion = completions.find(c => c.patientId === ins.patientId);
+      
+      const submission = {
+        id: ins.patientId,
+        patientName: ins.subscriberName || (patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown Patient'),
+        email: patient?.email || 'unknown@example.com',
+        phone: patient?.phone || 'Not provided',
+        submittedAt: ins.created_at,
+        completedAt: completion?.completed_at || null,
+        status: completion ? 'completed' : (clinical ? 'partial' : 'incomplete'),
+        hasInsurance: true,
+        hasClinical: !!clinical,
+        hasCompletion: !!completion,
+        completionSteps: {
+          total: 3,
+          completed: [true, !!clinical, !!completion].filter(Boolean).length,
+          percentage: Math.round(([true, !!clinical, !!completion].filter(Boolean).length / 3) * 100),
+          hasInsurance: true,
+          hasClinical: !!clinical,
+          hasCompletion: !!completion
+        }
+      };
+      
+      submissions.push(submission);
+    });
+
+    // Also add patients who only have demographics
+    patients.forEach(patient => {
+      const hasInsurance = insurance.some(ins => ins.patientId === patient.id);
+      if (!hasInsurance) {
+        const clinical = clinicalForms.find(c => c.patientId === patient.id);
+        const completion = completions.find(c => c.patientId === patient.id);
+        
+        submissions.push({
+          id: patient.id,
+          patientName: `${patient.first_name} ${patient.last_name}`,
+          email: patient.email,
+          phone: patient.phone || 'Not provided',
+          submittedAt: patient.created_at,
+          completedAt: completion?.completed_at || null,
+          status: completion ? 'completed' : (clinical ? 'partial' : 'incomplete'),
+          hasInsurance: false,
+          hasClinical: !!clinical,
+          hasCompletion: !!completion,
+          completionSteps: {
+            total: 3,
+            completed: [false, !!clinical, !!completion].filter(Boolean).length,
+            percentage: Math.round(([false, !!clinical, !!completion].filter(Boolean).length / 3) * 100),
+            hasInsurance: false,
+            hasClinical: !!clinical,
+            hasCompletion: !!completion
+          }
+        });
+      }
+    });
+
+    // Sort by submission date (most recent first)
+    submissions.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt));
+
+    console.log('Returning submissions:', submissions.length);
+
+    res.json({
+      success: true,
+      data: submissions,
+      total: submissions.length,
+      filters: {
+        search: req.query.search || null,
+        dateFrom: req.query.dateFrom || null,
+        dateTo: req.query.dateTo || null,
+        status: req.query.status || null
+      }
+    });
+  } catch (error) {
+    console.error('Admin submissions error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch submissions',
+      message: error.message
+    });
+  }
 });
 
 app.get('/api/admin/submissions/:id', (req, res) => {
-  res.json({
-    success: true,
-    data: {
-      id: req.params.id,
-      patientName: 'Test Patient',
-      status: 'completed',
-      message: 'Using simplified backend'
+  try {
+    const patientId = req.params.id;
+    console.log('Admin detail requested for:', patientId);
+    
+    const patient = patients.find(p => p.id === patientId);
+    const insuranceRecord = insurance.find(ins => ins.patientId === patientId);
+    const clinicalRecord = clinicalForms.find(c => c.patientId === patientId);
+    const completionRecord = completions.find(c => c.patientId === patientId);
+    
+    if (!patient && !insuranceRecord) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found',
+        message: `No patient found with ID: ${patientId}`
+      });
     }
-  });
+    
+    const submission = {
+      id: patientId,
+      patientName: insuranceRecord?.subscriberName || (patient ? `${patient.first_name} ${patient.last_name}` : 'Unknown Patient'),
+      email: patient?.email || 'unknown@example.com',
+      phone: patient?.phone || 'Not provided',
+      submittedAt: insuranceRecord?.created_at || patient?.created_at,
+      completedAt: completionRecord?.completed_at || null,
+      status: completionRecord ? 'completed' : (clinicalRecord ? 'partial' : 'incomplete'),
+      
+      // Patient demographics
+      patient: patient ? {
+        firstName: patient.first_name,
+        lastName: patient.last_name,
+        dateOfBirth: patient.date_of_birth,
+        address: patient.address,
+        phone: patient.phone,
+        email: patient.email,
+        createdAt: patient.created_at
+      } : null,
+      
+      // Insurance information
+      insurance: insuranceRecord ? {
+        provider: insuranceRecord.provider,
+        policyNumber: insuranceRecord.policyNumber,
+        groupNumber: insuranceRecord.groupNumber,
+        subscriberName: insuranceRecord.subscriberName,
+        submittedAt: insuranceRecord.created_at
+      } : null,
+      
+      // Clinical forms
+      clinicalForms: clinicalRecord ? {
+        medicalHistory: clinicalRecord.medicalHistory,
+        currentMedications: clinicalRecord.currentMedications,
+        allergies: clinicalRecord.allergies,
+        symptoms: clinicalRecord.symptoms,
+        submittedAt: clinicalRecord.created_at
+      } : null,
+      
+      // Completion info
+      completion: completionRecord ? {
+        completedAt: completionRecord.completed_at,
+        estimatedWaitTime: completionRecord.estimatedWaitTime
+      } : null,
+      
+      hasInsurance: !!insuranceRecord,
+      hasClinical: !!clinicalRecord,
+      hasCompletion: !!completionRecord
+    };
+    
+    console.log('Returning patient detail for:', submission.patientName);
+    
+    res.json({
+      success: true,
+      data: submission
+    });
+  } catch (error) {
+    console.error('Admin detail error:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch patient details',
+      message: error.message
+    });
+  }
 });
 
 // 404 handler for unknown routes

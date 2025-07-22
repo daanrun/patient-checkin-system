@@ -12,10 +12,10 @@
   # Node.js version
   NODE_VERSION = "18"
 
-# API redirects to Netlify Functions
+# API redirects to Render backend
 [[redirects]]
   from = "/api/*"
-  to = "/.netlify/functions/api/:splat"
+  to = "https://patient-checkin-system.onrender.com/api/:splat"
   status = 200
 
 # Redirect rules for React Router
